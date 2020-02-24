@@ -6,6 +6,7 @@ python:
 before_install:
     - pip install pipenv
 install:
-    - pipenv install --dev --pre
+    - pipenv install --dev
+    - pip install black==18.9b0
 script:
     - pipenv run pytest -vv --color=yes --cov=omega --cov-report term-missing:skip-covered

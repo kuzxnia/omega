@@ -9,8 +9,6 @@ flask-migrate = "*"
 celery = "*"
 gevent = "*"
 gunicorn = "*"
-pylint = "*"
-black = "*"
 
 [dev-packages]
 pytest = "*"
@@ -20,7 +18,8 @@ pytest-xdist = "*"
 mock = "*"
 faker = "*"
 flake8 = "*"
-black = "18.9b0"
+pylint = "*"
+pre-commit = "*"
 
 [requires]
 python_version = "3.8"

@@ -8,8 +8,9 @@ help:
 
 install:
 	pip install pipenv
+	pip install black==18.9b0
 	pipenv install --dev --pre
-	pre-commit install -t pre-commit pre-push
+	pipenv run pre-commit install & pre-commit install -t pre-push
 
 run:
 	pipenv run python manage.py runserver
