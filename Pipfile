@@ -1,0 +1,29 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+flask-migrate = "*"
+celery = "*"
+gevent = "*"
+gunicorn = "*"
+pylint = "*"
+black = "*"
+
+[dev-packages]
+pytest = "*"
+pytest-cov = "*"
+pytest-sugar = "*"
+pytest-xdist = "*"
+mock = "*"
+faker = "*"
+flake8 = "*"
+black = "18.9b0"
+
+[requires]
+python_version = "3.8"
+
+[pipenv]
+allow_prereleases = true

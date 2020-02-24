@@ -1,0 +1,11 @@
+dist: bionic
+language: python
+python:
+    - "3.8"
+
+before_install:
+    - pip install pipenv
+install:
+    - pipenv install --dev --pre
+script:
+    - pipenv run pytest -vv --color=yes --cov=omega --cov-report term-missing:skip-covered
