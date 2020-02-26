@@ -9,7 +9,7 @@ help:
 install:
 	pip install pipenv
 	pip install black==18.9b0
-	pipenv install --dev --pre
+	pipenv install --dev
 	pipenv run pre-commit install & pre-commit install -t pre-push
 
 run:

@@ -1,5 +1,5 @@
-<p  align="center">
-    <img src="https://github.com/kuzxnia/omega/blob/master/static/images/omega.png" alt="omega">
+<p align="center">
+    <img src="https://github.com/kuzxnia/omega/blob/master/static/images/omega.png" alt="omega" width="320" height="315">
 </p>
 
 <p align="center"><b>OMEGA</b></p>
