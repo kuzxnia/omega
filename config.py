@@ -1,13 +1,13 @@
 import os
 
-postgres_local_base = "p ostgresql://rollie:rollie@127.0.0.1:5432/rollie"
+postgres_local_base = os.getenv("postgres_uri")
 
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "my_precious_secret_key")
     DEBUG = False
 
-    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:postgres@localhost/omega"
+    SQLALCHEMY_DATABASE_URI = postgres_local_base
 
     # Flask-Restplus settings
     RESTPLUS_SWAGGER_UI_DOC_EXPANSION = "list"
@@ -17,6 +17,7 @@ class Config:
 
 
 class DevelopmentConfig(Config):
+    ENV = "development"
     DEBUG = True
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     SQLALCHEMY_TRACK_MODIFICATIONS = True
@@ -30,7 +31,7 @@ class TestingConfig(Config):
 
 
 class ProductionConfig(Config):
-    DEBUG = False
+    pass
 
 
 config_by_name = dict(dev=DevelopmentConfig, test=TestingConfig, prod=ProductionConfig)

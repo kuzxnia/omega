@@ -29,6 +29,8 @@ faker = "*"
 flake8 = "*"
 pylint = "*"
 pre-commit = "*"
+mypy = "*"
+flower = "*"
 
 [requires]
 python_version = "3.8"

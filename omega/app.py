@@ -1,7 +1,9 @@
 import sys
 
+import logging
+import logging.config
+
 from flask import Flask
-from flask.logging import default_handler
 
 from config import config_by_name
 from omega.routes import register_endpoints
@@ -29,41 +31,40 @@ class Omega(Flask):
 
         cache.init_app(self)
 
-    def add_logging_handlers(self):
-        import logging
-        import logging.config
-
-        # Set general log level
-        self.logger.setLevel(logging.INFO)
+    def logging_config(self):
         self.logger.propagate = False
-        self.logger.disable_existing_loggers = False
-
-        # Add log file handler (if configured)
-        path = self.config.get("LOGFILE")
-        if path:
-            handler = logging.handlers.RotatingFileHandler(path, "a", 10000, 4)
-        else:
-            handler = logging.StreamHandler(sys.stdout)
-
-        handler.setLevel(logging.INFO)
-
-        file_formatter = logging.Formatter(
-            "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
-        )
-        handler.setFormatter(file_formatter)
-
-        self.logger.addHandler(handler)
-        self.logger.removeHandler(default_handler)
+        return {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "default": {
+                    "format": "%(asctime)s - %(levelname)s - %(message)s",
+                    "datefmt": "%Y-%m-%d %H:%M:%S",
+                }
+            },
+            "handlers": {
+                "console": {
+                    "class": "logging.StreamHandler",
+                    "formatter": "default",
+                    "stream": sys.stdout,
+                }
+            },
+            "root": {"level": logging.DEBUG, "handlers": ["console"]},
+            "loggers": {
+                "default": {"level": logging.DEBUG, "handlers": ["console"]},
+                "omega": {"level": logging.DEBUG, "handlers": ["console"]},
+            },
+        }
 
     def add_celery(self):
-        from omega.extensions import celery
+        from omega.task.worker import celery
 
         celery.init_app(self)
 
 
 def create_app(*args, **kw):
     app = Omega(*args, **kw)
-    app.add_logging_handlers()
+    logging.config.dictConfig(app.logging_config())
     app.add_sqlalchemy()
 
     register_endpoints(app)
@@ -72,6 +73,6 @@ def create_app(*args, **kw):
 
 
 def create_celery_app(*args, **kw):
-    app = create_app("omega.worker", *args, **kw)
+    app = create_app("omega.task", *args, **kw)
     app.add_celery()
     return app

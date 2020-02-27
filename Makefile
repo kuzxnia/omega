@@ -2,7 +2,8 @@
 .DEFAULT: help
 help:
 	@echo "make install"
-	@echo "make run"
+	@echo "make run_api"
+	@echo "make run_celery"
 	@echo "make shell"
 	@echo "make test"
 
@@ -12,8 +13,11 @@ install:
 	pipenv install --dev
 	pipenv run pre-commit install & pre-commit install -t pre-push
 
-run:
+run_api:
 	pipenv run python manage.py runserver
+
+run_celery:
+	pipenv run python manage.py celery runserver
 
 shell:
 	pipenv run python manage.py shell

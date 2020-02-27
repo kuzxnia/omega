@@ -8,5 +8,29 @@ before_install:
 install:
     - pipenv install --dev
     - pip install black==18.9b0
-script:
-    - pipenv run pytest -vv --color=yes --cov=omega --cov-report term-missing:skip-covered
+    - sudo apt-get install rabbitmq-server
+
+stages:
+    - Statis Analisis
+    - Test
+
+black:
+	stage: Static Analysis
+	script:
+	- pipenv run black --check
+
+flake8:
+	stage: Static Analysis
+	script:
+	- pipenv run flake8
+
+pylint:
+	stage: Static Analysis
+	allow_failure: true
+	script:
+		- pipenv run pylint
+
+unit_test:
+	stage: Test
+	script:
+	- pipenv run pytest -vv --color=yes --cov=omega --cov-report term-missing:skip-covered
