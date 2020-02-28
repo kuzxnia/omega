@@ -1,6 +1,8 @@
 import os
 
-postgres_local_base = os.getenv("postgres_uri")
+postgres_local_base = os.getenv(
+    "postgres_uri", "postgresql://postgres:postgres@localhost/omega"
+)
 
 
 class Config:

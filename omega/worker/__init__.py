@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 from celery import Celery
 
 
@@ -18,5 +19,5 @@ def init_app(self, app):
     self.Task = ContextTask
 
 
-celery = Celery(include=["omega.task.tasks"])
+celery = Celery(include=["omega.worker.tasks"])
 Celery.init_app = init_app

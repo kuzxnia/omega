@@ -17,7 +17,7 @@ run_api:
 	pipenv run python manage.py runserver
 
 run_celery:
-	pipenv run python manage.py celery runserver
+	pipenv run python manage.py celery runworker
 
 shell:
 	pipenv run python manage.py shell

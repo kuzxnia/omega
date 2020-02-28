@@ -18,6 +18,10 @@ flask-script = "*"
 pandas = "*"
 flask-bcrypt = "*"
 flask-caching = "*"
+lxml = "*"
+bs4 = "*"
+requests = "*"
+stringcase = "*"
 
 [dev-packages]
 pytest = "*"

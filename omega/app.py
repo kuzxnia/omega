@@ -1,11 +1,9 @@
-import sys
-
 import logging
 import logging.config
-
-from flask import Flask
+import sys
 
 from config import config_by_name
+from flask import Flask
 from omega.routes import register_endpoints
 
 
@@ -57,7 +55,7 @@ class Omega(Flask):
         }
 
     def add_celery(self):
-        from omega.task.worker import celery
+        from omega.worker import celery
 
         celery.init_app(self)
 
@@ -73,6 +71,6 @@ def create_app(*args, **kw):
 
 
 def create_celery_app(*args, **kw):
-    app = create_app("omega.task", *args, **kw)
+    app = create_app("omega.worker", *args, **kw)
     app.add_celery()
     return app
