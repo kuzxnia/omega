@@ -21,3 +21,18 @@ def fetch_watch_types():
 @manager.command
 def fetch_watch_brands():
     tasks.fetch_watch_brands()  # .delay()
+
+
+@manager.command
+def fetch_currency():
+    tasks.fetch_currency()  # .delay()
+
+
+@manager.command
+def fetch_scopes_of_delivery():
+    tasks.fetch_scopes_of_delivery()  # .delay()
+
+
+@manager.command
+def fetch_watch_conditions():
+    tasks.fetch_watch_conditions()  # .delay()
