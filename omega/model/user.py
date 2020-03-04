@@ -1,7 +1,10 @@
-from sqlalchemy import Column, Integer, Unicode
+from sqlalchemy import Column
+from sqlalchemy import Integer
+from sqlalchemy import Unicode
 
-from omega.lib.database_tools import BaseEntity, CreateEditMixin
 from omega.model.enums import Role
+from omega.util.database_tools import BaseEntity
+from omega.util.database_tools import CreateEditMixin
 
 
 class User(BaseEntity, CreateEditMixin):

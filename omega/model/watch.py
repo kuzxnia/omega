@@ -1,12 +1,12 @@
-from sqlalchemy import Column, Float, Unicode
+from sqlalchemy import Column
+from sqlalchemy import Float
+from sqlalchemy import Unicode
 from sqlalchemy.dialects.postgresql import JSON
 
-from omega.lib.database_tools import (
-    BaseEntity,
-    BasicDictionaryTable,
-    CreateEditMixin,
-    FKColumn,
-)
+from omega.util.database_tools import BaseEntity
+from omega.util.database_tools import BasicDictionaryTable
+from omega.util.database_tools import CreateEditMixin
+from omega.util.database_tools import FKColumn
 
 
 class Currency(BasicDictionaryTable):

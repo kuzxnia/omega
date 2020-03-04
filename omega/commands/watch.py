@@ -1,6 +1,7 @@
 import logging
 
 from flask_script import Manager
+
 from omega.worker import tasks
 
 log = logging.getLogger(__name__)
@@ -9,8 +10,13 @@ manager = Manager(help="Perform watch operations")
 
 
 @manager.command
-def fetch_watch_offers_since(date_from=None):
-    tasks.fetch_watch_offers_since.delay(date_from)
+def fetch_offer_details():
+    tasks.fetch_offer_details()
+
+
+@manager.command
+def fetch_recent_watch_offers():
+    tasks.fetch_recent_watch_offers()
 
 
 @manager.command

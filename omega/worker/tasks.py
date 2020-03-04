@@ -1,19 +1,77 @@
-from datetime import datetime, timedelta
+from gevent import monkey
+monkey.patch_all()
 
+import gevent.pool
+import gevent.queue
+import requests
 from celery.utils.log import get_task_logger
-from omega.extensions import db
-from omega.lib.scrape_tools import parse_page
-from omega.model.watch import (Currency, ScopeOfDelivery, WatchBrand,
-                               WatchCondition, WatchType)
-from omega.worker import celery
 from stringcase import snakecase
+
+from omega.extensions import db
+from omega.model.watch import Currency
+from omega.model.watch import ScopeOfDelivery
+from omega.model.watch import WatchBrand
+from omega.model.watch import WatchCondition
+from omega.model.watch import WatchType
+from omega.util.scrape_tools import parse_page
+from omega.util.watch import extract_watch_offer_data
+from omega.worker import celery
 
 log = get_task_logger(__name__)
 
 
 @celery.task
-def fetch_watch_offers_since(date_from=None):
-    date_from = date_from if date_from else datetime.now() - timedelta(days=1)
+def fetch_offer_details():
+
+    with requests.Session() as request_session:
+        if (page := record.text.split(',')):  # noqa
+            extract_watch_offer_data(page)
+
+
+@celery.task
+def fetch_recent_watch_offers():
+    pool = gevent.pool.Pool(10)
+    queue = gevent.queue.Queue()
+    offers = []
+    with requests.Session() as request_session:
+        first_page = parse_page(
+            f"https://www.chrono24.com/watches/recently-added-watches--270.htm?pageSize=120", request_session
+        )
+
+        page_numbers = (
+            int(page.text)
+            for page in first_page.find("ul", {"class": "pagination"}).find_all("a")
+            if page.text.isnumeric()
+        )
+
+        def scrape_data():
+            url = queue.get(timeout=0)
+            offers.extend(extract_offers_from_page(parse_page(url, request_session)))
+
+        for page_number in range(2, max(page_numbers)):
+            queue.put(
+                f"https://www.chrono24.com/watches/recently-added-watches--270-{page_number}.htm?pageSize=120"
+            )
+
+        pool.spawn()
+        while not queue.empty() and not pool.free_count() == 10:
+            gevent.sleep(0.1)
+            for x in range(0, min(queue.qsize(), pool.free_count())):
+                pool.spawn(scrape_data)
+        pool.join()
+
+
+def offers_for_url(url):
+    return extract_offers_from_page(parse_page(url))
+
+
+def extract_offers_from_page(page):
+    return [
+        link["href"]
+        for link in page.find("div", {"id": "wt-watches"}).find_all(
+            "a", {"class": "article-item"}
+        )
+    ]
 
 
 @celery.task
