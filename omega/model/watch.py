@@ -40,7 +40,7 @@ class Watch(BaseEntity, CreateEditMixin):
 
 class WatchFetchJobGroup(BaseEntity, CreateEditMixin):
     amount_offers_to_fetch = Column(Integer, nullable=False)
-    group_fetch_status_id = FKColumn(WatchFetchJobGroupStatus)
+    group_fetch_status_id = FKColumn(WatchFetchJobGroupStatus, default=0)
 
 
 class WatchFetchJob(BaseEntity, CreateEditMixin):

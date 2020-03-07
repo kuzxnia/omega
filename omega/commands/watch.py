@@ -9,8 +9,8 @@ manager = Manager(help="Perform watch operations")
 
 
 @manager.command
-def fetch_offer_details():
-    tasks.fetch_offer_details()
+def fetch_offer_details(fetch_group_id):
+    tasks.fetch_offer_details(fetch_group_id)
 
 
 @manager.command

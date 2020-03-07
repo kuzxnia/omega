@@ -9,6 +9,8 @@ from omega.model.watch import (
     ScopeOfDelivery,
     WatchBrand,
     WatchCondition,
+    WatchFetchJob,
+    WatchFetchJobGroup,
     WatchType,
 )
 from omega.util.global_const import (
@@ -27,14 +29,19 @@ log = get_task_logger(__name__)
 
 
 @celery.task
-def fetch_offer_details():
+def fetch_offer_details(fetch_group_id):
     # wyciągniecie grupy zlecenia
     # iter po zleceniach
+    links_to_crawl_and_fetch_data = (
+        wfj.offer_link
+        for wfj in WatchFetchJob.query.filter_by(fetch_group_id=fetch_group_id)
+    )
 
     with requests.Session() as request_session:
-        page = parse_page("", request_session)
-        if page:
-            extract_watch_offer_data(page)
+        for link in links_to_crawl_and_fetch_data:
+            page = parse_page(link, request_session)
+            if page:
+                extract_watch_offer_data(page)
 
 
 @celery.task
@@ -65,8 +72,21 @@ def fetch_recent_watch_offers():
                 pool.spawn(scrape_data)
         pool.join()
 
-        # dodanie grupy
-        # wyfiltrowanie po link nowych ofert do pobrania
+        fetched_offers = set(
+            db.session.query(WatchFetchJob.offer_link)
+            .filter(WatchFetchJob.offer_link.in_(offers))
+            .all()
+        )
+        offers_to_fetch = set(offers) - fetched_offers
+
+        fetch_group = WatchFetchJobGroup(amount_offers_to_fetch=len(offers_to_fetch))
+        db.session.add(fetch_group)
+        db.session.flush()
+
+        for link in offers_to_fetch:
+            db.session.add(
+                WatchFetchJob(fetch_group_id=fetch_group.id, offer_link=link)
+            )
 
 
 def offers_for_url(url):
