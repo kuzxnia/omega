@@ -1,5 +1,4 @@
 import graphene
-
 from omega.extensions import db
 from omega.model.user import User
 from omega.schema import Query, UserObject

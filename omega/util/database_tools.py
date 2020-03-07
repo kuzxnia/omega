@@ -1,15 +1,12 @@
 import logging
 from datetime import datetime
 
-from sqlalchemy import Column
-from sqlalchemy import DateTime
-from sqlalchemy import ForeignKey
-from sqlalchemy import Integer
-from sqlalchemy import Unicode
-from sqlalchemy.ext.declarative import declared_attr
-
 from omega.extensions import db
 from omega.util.collection_tools import copy_to
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Unicode
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.ext.declarative import declared_attr
+from stringcase import snakecase
 
 log = logging.getLogger(__name__)
 
@@ -20,9 +17,13 @@ class BaseEntity(db.Model):
 
     @declared_attr
     def __tablename__(self):
-        return self.__name__.lower()
+        return snakecase(self.__name__.lower())
 
     id = Column(Integer, autoincrement=True, primary_key=True)
+
+    @declared_attr
+    def uuid(self):
+        return Column(UUID(as_uuid=True), unique=True, nullable=False)
 
 
 class CreateEditMixin(object):
@@ -50,9 +51,8 @@ class BasicDictionaryTable(BaseEntity, CreateEditMixin):
 
     @classmethod
     def insert_or_update_one(cls, **data):
-        """
-        """
-        if obj := cls.query(code=data["code"]).one_or_none():  # noqa
+        obj = cls.query(code=data["code"]).one_or_none()  # pylint: disable=not-callable
+        if obj:
             log.info("update %r", obj.__dict__)
             obj = copy_to(obj, data)
         else:
@@ -64,6 +64,10 @@ class BasicDictionaryTable(BaseEntity, CreateEditMixin):
 
     def __repr__(self):
         return f"<{self.__class__} code={self.code} name={self.name}>"
+
+
+def make_dictionary_table(table_name):
+    return type(table_name, (BasicDictionaryTable,), {})
 
 
 def FKColumn(ref, **kwargs):

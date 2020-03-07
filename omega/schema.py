@@ -1,6 +1,5 @@
 import graphene
 from graphene_sqlalchemy import SQLAlchemyConnectionField, SQLAlchemyObjectType
-
 from omega.model import user, watch
 
 

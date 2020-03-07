@@ -1,6 +1,5 @@
 from flask import current_app
 from flask_script import Shell as BaseShell
-
 from omega import extensions, model
 
 

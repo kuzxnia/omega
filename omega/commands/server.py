@@ -1,5 +1,4 @@
 from flask_script import Server as BaseServer
-
 from omega.app import create_app
 
 

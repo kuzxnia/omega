@@ -1,7 +1,6 @@
 import logging
 
 from flask_script import Manager, prompt_bool
-
 from omega.extensions import db
 
 log = logging.getLogger(__name__)
@@ -14,6 +13,7 @@ def create():
     """ Initialize the database by creating the necessary tables and indices """
     log.info("Initializing database, creating tables")
     db.create_all()
+    # add statuses based on consts
 
 
 @manager.command

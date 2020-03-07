@@ -1,7 +1,6 @@
 import logging
 
 from flask_script import Manager
-
 from omega.worker import tasks
 
 log = logging.getLogger(__name__)
