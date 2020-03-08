@@ -1,11 +1,13 @@
 import logging
 from datetime import datetime
+from uuid import uuid4
 
 from omega.extensions import db
 from omega.util.collection_tools import copy_to
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Unicode
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declared_attr
+
 from stringcase import snakecase
 
 log = logging.getLogger(__name__)
@@ -17,13 +19,13 @@ class BaseEntity(db.Model):
 
     @declared_attr
     def __tablename__(self):
-        return snakecase(self.__name__.lower())
+        return snakecase(self.__name__)
 
     id = Column(Integer, autoincrement=True, primary_key=True)
 
     @declared_attr
     def uuid(self):
-        return Column(UUID(as_uuid=True), unique=True, nullable=False)
+        return Column(UUID(as_uuid=True), default=uuid4, unique=True, nullable=False)
 
 
 class CreateEditMixin(object):

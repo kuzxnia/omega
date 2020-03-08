@@ -1,12 +1,10 @@
-import gevent.pool
-import gevent.queue
-import requests
-from celery.utils.log import get_task_logger
-from gevent import monkey
+from time import time
+
 from omega.extensions import db
 from omega.model.watch import (
     Currency,
     ScopeOfDelivery,
+    Watch,
     WatchBrand,
     WatchCondition,
     WatchFetchJob,
@@ -14,34 +12,58 @@ from omega.model.watch import (
     WatchType,
 )
 from omega.util.global_const import (
+    BASE_URL,
+    JOB_GROUP_STATUSES,
+    JOB_STATUSES,
     RECENTLY_ADDED_OFFERS,
     RECENTLY_ADDED_OFFERS_PAGINATE,
 )
-from omega.util.scrape_tools import parse_page
+from omega.util.scrape_tools import parse_page, pool_queue_session
 from omega.util.watch import extract_watch_offer_data
 from omega.worker import celery
+
+import requests
+from celery.utils.log import get_task_logger
 from stringcase import snakecase
-
-monkey.patch_all()
-
 
 log = get_task_logger(__name__)
 
 
 @celery.task
 def fetch_offer_details(fetch_group_id):
-    # wyciągniecie grupy zlecenia
-    # iter po zleceniach
-    links_to_crawl_and_fetch_data = (
-        wfj.offer_link
-        for wfj in WatchFetchJob.query.filter_by(fetch_group_id=fetch_group_id)
+    fetch_group = WatchFetchJobGroup.query(id=fetch_group_id).one()
+    fetch_group.group_fetch_status_id = JOB_GROUP_STATUSES.IN_PROCESS
+    db.session.commit()
+
+    offers_to_fetch = (
+        wfj
+        for wfj in WatchFetchJob.query().filter(
+            WatchFetchJob.fetch_group_id == fetch_group_id,
+            WatchFetchJob.fetch_status_id.in_([JOB_STATUSES.NEW, JOB_STATUSES.ERROR]),
+        )
     )
 
+    start = time()
     with requests.Session() as request_session:
-        for link in links_to_crawl_and_fetch_data:
-            page = parse_page(link, request_session)
-            if page:
-                extract_watch_offer_data(page)
+        for offer in offers_to_fetch:
+            try:
+                page = parse_page(BASE_URL + offer.offer_link, request_session)
+                if not page:
+                    offer.fetch_status_id = JOB_STATUSES.ERROR
+
+                data = extract_watch_offer_data(page)
+                watch = Watch(**data)
+                watch.offer_link = offer.offer_link
+                offer.fetch_status_id = JOB_STATUSES.SUCCESS
+                db.session.add(watch)
+            except Exception as e:  # pylint: disable=broad-except
+                offer.fetch_status_id = JOB_STATUSES.ERROR
+                offer.error_stacktrace = str(e)
+            finally:
+                db.session.commit()
+
+    fetch_group.fetch_time = time() - start
+    db.session.commit()
 
 
 @celery.task
@@ -51,9 +73,8 @@ def fetch_recent_watch_offers():
         offers.extend(extract_offers_from_page(parse_page(url, request_session)))
 
     offers = []
-    pool = gevent.pool.Pool(10)
-    queue = gevent.queue.Queue()
-    with requests.Session() as request_session:
+    start_time = time()
+    with pool_queue_session(scrape_data) as (pool, queue, request_session):
         first_page = parse_page(RECENTLY_ADDED_OFFERS, request_session)
 
         last_page_number = max(
@@ -65,28 +86,22 @@ def fetch_recent_watch_offers():
         for page_number in range(2, last_page_number):
             queue.put(RECENTLY_ADDED_OFFERS_PAGINATE.format(page_number))
 
-        pool.spawn()
-        while not queue.empty() and not pool.free_count() == 10:
-            gevent.sleep(0.25)
-            for x in range(0, min(queue.qsize(), pool.free_count())):
-                pool.spawn(scrape_data)
-        pool.join()
-
-        fetched_offers = set(
-            db.session.query(WatchFetchJob.offer_link)
-            .filter(WatchFetchJob.offer_link.in_(offers))
-            .all()
+    offers_to_fetch = set(offers) - {
+        offer
+        for offer, in db.session.query(WatchFetchJob.offer_link).filter(
+            WatchFetchJob.offer_link.in_(offers)
         )
-        offers_to_fetch = set(offers) - fetched_offers
+    }
 
-        fetch_group = WatchFetchJobGroup(amount_offers_to_fetch=len(offers_to_fetch))
-        db.session.add(fetch_group)
-        db.session.flush()
+    fetch_group = WatchFetchJobGroup(
+        amount_offers_to_fetch=len(offers_to_fetch),
+        job_fetch_time=(time() - start_time),
+    )
+    db.session.add(fetch_group)
+    db.session.flush()
 
-        for link in offers_to_fetch:
-            db.session.add(
-                WatchFetchJob(fetch_group_id=fetch_group.id, offer_link=link)
-            )
+    for link in offers_to_fetch:
+        db.session.add(WatchFetchJob(fetch_group_id=fetch_group.id, offer_link=link))
 
 
 def offers_for_url(url):

@@ -22,6 +22,7 @@ lxml = "*"
 bs4 = "*"
 requests = "*"
 stringcase = "*"
+price-parser = "*"
 
 [dev-packages]
 pytest = "*"

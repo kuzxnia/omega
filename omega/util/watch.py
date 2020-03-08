@@ -1,5 +1,7 @@
 import logging
+from decimal import Decimal
 
+from price_parser import Price
 from stringcase import snakecase
 
 log = logging.getLogger(__name__)
@@ -7,17 +9,22 @@ log = logging.getLogger(__name__)
 
 def extract_watch_offer_data(page):
     def unify_title(section_title):
-        return snakecase(section_title.find("p").text.strip().lower())
+        return snakecase(section_title.find("p").text.strip().lower().replace("/", "_"))
 
-    data = {"watch_price": page.find("div", {"class": "detail-page-price"})}
-
+    result = {}
     for section in page.find("section", {"class": "specifications"}).find_all("tbody"):
         section_title, *section_data = section.find_all("tr")
         section_title = unify_title(section_title)
 
-        data[section_title] = extract_data_from_section(section_title, section_data)
+        result[section_title] = extract_data_from_section(section_title, section_data)
 
-    return data
+    watch_price = Price.fromstring(
+        page.find("div", {"class": "detail-page-price"}).text
+    )
+    result["currency"] = watch_price.currency
+    result["price"] = Decimal(watch_price.amount or "0")
+
+    return result
 
 
 def extract_data_from_section(section_title, section_data):

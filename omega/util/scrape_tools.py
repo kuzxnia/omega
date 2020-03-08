@@ -1,7 +1,15 @@
-import logging
+from gevent import monkey  # isort:skip
 
-import requests
+monkey.patch_all()  # isort:skip
+
+import logging
+from contextlib import contextmanager
+
 from bs4 import BeautifulSoup as bs
+
+import gevent.pool
+import gevent.queue
+import requests
 
 log = logging.getLogger(__name__)
 
@@ -18,3 +26,20 @@ def parse_page(url, session=None):
 
     log.debug("Page %s fetched successfuly", url)
     return bs(page.text, "lxml")
+
+
+@contextmanager
+def pool_queue_session(function, pool_size=10):
+    """Funcion yields pool queue and requests session"""
+    pool = gevent.pool.Pool(pool_size)
+    queue = gevent.queue.Queue()
+    with requests.Session() as request_session:
+
+        yield (pool, queue, request_session)
+
+        pool.spawn(function)
+        while not queue.empty() and not pool.free_count() == 10:
+            gevent.sleep(0.25)
+            for x in range(0, min(queue.qsize(), pool.free_count())):
+                pool.spawn(function)
+        pool.join()
