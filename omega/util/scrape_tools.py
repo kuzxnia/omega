@@ -7,39 +7,40 @@ from contextlib import contextmanager
 
 from bs4 import BeautifulSoup as bs
 
-import gevent.pool
-import gevent.queue
 import requests
+from gevent import pool, queue, sleep
 
 log = logging.getLogger(__name__)
 
 
-def parse_page(url, session=None):
-    request = session if session else requests
+def parse_page(url, throught_proxy=True, timeout=2):
+    """
+    Raises:
+        requests.exceptions.RequestException
+    """
+    request = requests
+    if throught_proxy:
+        from omega.util import proxy_request
 
-    log.info(url)
-    page = request.get(url, allow_redirects=False)
-    log.info(page.status_code)
-    if page.status_code != 200:
-        log.error("Invalid response status, abort")
-        return
+        request = proxy_request
 
-    log.debug("Page %s fetched successfuly", url)
+    page = request.get(url, verify=False, allow_redirects=False, timeout=timeout)
+    page.raise_for_status()
+    log.info("Page Fetched")
     return bs(page.text, "lxml")
 
 
 @contextmanager
 def pool_queue_session(function, pool_size=10):
     """Funcion yields pool queue and requests session"""
-    pool = gevent.pool.Pool(pool_size)
-    queue = gevent.queue.Queue()
-    with requests.Session() as request_session:
+    gevent_pool = pool.Pool(pool_size)
+    gevent_queue = queue.Queue()
 
-        yield (pool, queue, request_session)
+    yield gevent_pool, gevent_queue
 
-        pool.spawn(function)
-        while not queue.empty() and not pool.free_count() == 10:
-            gevent.sleep(0.25)
-            for x in range(0, min(queue.qsize(), pool.free_count())):
-                pool.spawn(function)
-        pool.join()
+    gevent_pool.spawn(function)
+    while not gevent_queue.empty() and not gevent_pool.free_count() == 10:
+        sleep(0.25)
+        for x in range(0, min(gevent_queue.qsize(), gevent_pool.free_count())):
+            gevent_pool.spawn(function)
+    gevent_pool.join()

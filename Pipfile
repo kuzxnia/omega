@@ -23,6 +23,7 @@ bs4 = "*"
 requests = "*"
 stringcase = "*"
 price-parser = "*"
+pycountry-convert = "*"
 
 [dev-packages]
 pytest = "*"

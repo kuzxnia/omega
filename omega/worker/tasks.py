@@ -1,3 +1,7 @@
+from gevent import monkey  # isort:skip
+
+monkey.patch_all()  # isort:skip
+
 from time import time
 
 from omega.extensions import db
@@ -66,42 +70,52 @@ def fetch_offer_details(fetch_group_id):
     db.session.commit()
 
 
-@celery.task
+@celery.task(time_limit=60)
 def fetch_recent_watch_offers():
     def scrape_data():
         url = queue.get(timeout=0)
-        offers.extend(extract_offers_from_page(parse_page(url, request_session)))
+        try:
+            offers.extend(offers_for_url(url))
+        except requests.exceptions.RequestException:
+            log.error("error")
+            queue.put(url)
 
     offers = []
     start_time = time()
-    with pool_queue_session(scrape_data) as (pool, queue, request_session):
-        first_page = parse_page(RECENTLY_ADDED_OFFERS, request_session)
+    try:
+        with pool_queue_session(scrape_data) as (pool, queue):
+            first_page = parse_page(RECENTLY_ADDED_OFFERS, throught_proxy=False)
 
-        last_page_number = max(
-            int(page.text)
-            for page in first_page.find("ul", {"class": "pagination"}).find_all("a")
-            if page.text.isnumeric()
+            last_page_number = max(
+                int(page.text)
+                for page in first_page.find("ul", {"class": "pagination"}).find_all("a")
+                if page.text.isnumeric()
+            )
+            log.info("pages to fetch %s", last_page_number)
+
+            for page_number in range(2, last_page_number):
+                queue.put(RECENTLY_ADDED_OFFERS_PAGINATE.format(page_number))
+    except celery.exceptions.SoftTimeLimitExceeded:
+        log.info("task time ends")
+    finally:
+        offers_to_fetch = set(offers) - {
+            offer
+            for offer, in db.session.query(WatchFetchJob.offer_link).filter(
+                WatchFetchJob.offer_link.in_(offers)
+            )
+        }
+
+        fetch_group = WatchFetchJobGroup(
+            amount_offers_to_fetch=len(offers_to_fetch),
+            job_fetch_time=(time() - start_time),
         )
+        db.session.add(fetch_group)
+        db.session.flush()
 
-        for page_number in range(2, last_page_number):
-            queue.put(RECENTLY_ADDED_OFFERS_PAGINATE.format(page_number))
-
-    offers_to_fetch = set(offers) - {
-        offer
-        for offer, in db.session.query(WatchFetchJob.offer_link).filter(
-            WatchFetchJob.offer_link.in_(offers)
-        )
-    }
-
-    fetch_group = WatchFetchJobGroup(
-        amount_offers_to_fetch=len(offers_to_fetch),
-        job_fetch_time=(time() - start_time),
-    )
-    db.session.add(fetch_group)
-    db.session.flush()
-
-    for link in offers_to_fetch:
-        db.session.add(WatchFetchJob(fetch_group_id=fetch_group.id, offer_link=link))
+        for link in offers_to_fetch:
+            db.session.add(
+                WatchFetchJob(fetch_group_id=fetch_group.id, offer_link=link)
+            )
 
 
 def offers_for_url(url):
