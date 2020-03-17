@@ -1,6 +1,4 @@
-from gevent import monkey  # isort:skip
-
-monkey.patch_all()  # isort:skip
+from gevent import monkey; monkey.patch_all()  # noqa isort:skip
 
 import logging
 from contextlib import contextmanager
@@ -20,9 +18,9 @@ def parse_page(url, throught_proxy=True, timeout=2):
     """
     request = requests
     if throught_proxy:
-        from omega.util import proxy_request
+        from omega.util.proxy import request
 
-        request = proxy_request
+        request = request
 
     page = request.get(url, verify=False, allow_redirects=False, timeout=timeout)
     page.raise_for_status()

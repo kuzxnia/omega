@@ -6,6 +6,7 @@ postgres_local_base = os.getenv(
 
 
 class Config:
+    from omega.util.proxy.pool import FreeProxyPool
     SECRET_KEY = os.getenv("SECRET_KEY", "my_precious_secret_key")
     DEBUG = False
 
@@ -16,13 +17,16 @@ class Config:
     RESTPLUS_VALIDATE = True
     RESTPLUS_MASK_SWAGGER = False
     RESTPLUS_ERROR_404_HELP = False
+    PROXY_POOL = 'FREE'  # FreeProxyPool
 
 
 class DevelopmentConfig(Config):
+    from omega.util.proxy.pool import DelayWithoutProxy
     ENV = "development"
     DEBUG = True
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     SQLALCHEMY_TRACK_MODIFICATIONS = True
+    PROXY_POOL = 'DELAY'  # DelayWithoutProxy
 
 
 class TestingConfig(Config):
