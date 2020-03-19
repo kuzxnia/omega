@@ -1,12 +1,16 @@
-from gevent import monkey, lock, sleep; monkey.patch_all()  # noqa isort:skip
+from gevent import lock, monkey, sleep  # isort:skip
 
-from omega.util.scrape_tools import parse_page
-from omega.util.class_tools import Singleton
-from abc import abstractmethod
-from omega.util.functools import timed_cache
-from pycountry_convert import country_alpha2_to_continent_code
-import random
+monkey.patch_all()  # isort:skip
+
 import logging
+import random
+from abc import abstractmethod
+
+from pycountry_convert import country_alpha2_to_continent_code
+
+from omega.util.class_tools import Singleton
+from omega.util.functools import timed_cache
+from omega.util.scrape_tools import parse_page
 
 sem = lock.Semaphore()
 log = logging.getLogger(__name__)
@@ -20,8 +24,8 @@ class ProxyPool(metaclass=Singleton):
     @abstractmethod
     def get_recent_proxy_list(self):
         """ supposed to be time cached """
-        pass
 
+    @abstractmethod
     def get_proxy_address(self):
         with sem:
             if not self.proxy_list:
@@ -32,6 +36,7 @@ class ProxyPool(metaclass=Singleton):
 
         return self.last_proxy
 
+    @abstractmethod
     def remove_last_proxy(self):
         with sem:
             if self.last_proxy in self.proxy_list:
@@ -72,8 +77,8 @@ class DelayWithoutProxy(ProxyPool):
         sleep(2)
         return None
 
+    def remove_last_proxy(self):
+        pass
 
-proxy_pool_by_key = {
-    'FREE': FreeProxyPool,
-    'DELAY': DelayWithoutProxy
-}
+
+proxy_pool_by_key = {"FREE": FreeProxyPool, "DELAY": DelayWithoutProxy}

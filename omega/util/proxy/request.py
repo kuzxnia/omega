@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 
 def proxy_request(method, url, **kwargs):
-    proxy_pool = proxy_pool_by_key[current_app.config['PROXY_POOL']]
+    proxy_pool = proxy_pool_by_key[current_app.config.get('PROXY_POOL')]
 
     try:
         with requests.Session() as session:

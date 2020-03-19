@@ -2,11 +2,13 @@ from gevent import monkey; monkey.patch_all()  # noqa isort:skip
 
 import logging
 from contextlib import contextmanager
+import requests
 
 from bs4 import BeautifulSoup as bs
-
-import requests
 from gevent import pool, queue, sleep
+
+from omega.util.flask_tools import copy_current_app_context
+
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +33,8 @@ def parse_page(url, throught_proxy=True, timeout=2):
 @contextmanager
 def pool_queue_session(function, pool_size=10):
     """Funcion yields pool queue and requests session"""
+    function = copy_current_app_context(function)
+
     gevent_pool = pool.Pool(pool_size)
     gevent_queue = queue.Queue()
 

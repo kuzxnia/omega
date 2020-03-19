@@ -1,4 +1,5 @@
 from flask_script import Manager
+
 from omega.app import create_celery_app
 from omega.worker import celery
 
