@@ -29,6 +29,7 @@ from omega.worker import celery
 import requests
 from celery.utils.log import get_task_logger
 from stringcase import snakecase
+from flask import current_app, copy_current_request_context
 
 log = get_task_logger(__name__)
 
@@ -72,12 +73,15 @@ def fetch_offer_details(fetch_group_id):
 
 @celery.task(time_limit=60)
 def fetch_recent_watch_offers():
+    log.info(current_app.config['PROXY_POOL'])
+
+    @copy_current_request_context
     def scrape_data():
         url = queue.get(timeout=0)
         try:
             offers.extend(offers_for_url(url))
         except requests.exceptions.RequestException:
-            log.error("error")
+            # log.error("error")
             queue.put(url)
 
     offers = []

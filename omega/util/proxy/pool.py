@@ -1,10 +1,11 @@
-from gevent import lock, monkey, sleep  # isort:skip
+from gevent import lock, monkey  # isort:skip
 
 monkey.patch_all()  # isort:skip
 
 import logging
 import random
 from abc import abstractmethod
+from time import sleep
 
 from pycountry_convert import country_alpha2_to_continent_code
 
@@ -43,6 +44,10 @@ class ProxyPool(metaclass=Singleton):
                 self.proxy_list.remove(self.last_proxy)
             self.last_proxy = None
 
+    @abstractmethod
+    def handle_exception(self, exception):
+        raise
+
 
 class FreeProxyPool(ProxyPool):
     @timed_cache(seconds=60)
@@ -68,14 +73,16 @@ class FreeProxyPool(ProxyPool):
                 pass
         sem.release()
 
+    def handle_exception(self, exception):
+        pass
+
 
 class DelayWithoutProxy(ProxyPool):
     def get_recent_proxy_list(self):
         pass
 
     def get_proxy_address(self):
-        sleep(2)
-        return None
+        sleep(2)  # deliberate blocking
 
     def remove_last_proxy(self):
         pass

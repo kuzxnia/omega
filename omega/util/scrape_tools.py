@@ -21,7 +21,6 @@ def parse_page(url, throught_proxy=True, timeout=2):
     request = requests
     if throught_proxy:
         from omega.util.proxy import request
-
         request = request
 
     page = request.get(url, verify=False, allow_redirects=False, timeout=timeout)

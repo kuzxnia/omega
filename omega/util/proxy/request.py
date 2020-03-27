@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 
 def proxy_request(method, url, **kwargs):
-    proxy_pool = proxy_pool_by_key[current_app.config.get('PROXY_POOL')]
+    proxy_pool = proxy_pool_by_key[current_app.config.get('PROXY_POOL')]()
 
     try:
         with requests.Session() as session:
@@ -20,9 +20,9 @@ def proxy_request(method, url, **kwargs):
                 session.proxies,
             )
             return session.request(method=method, url=url, **kwargs)
-    except Exception:
+    except Exception as e:
         proxy_pool.remove_last_proxy()
-        raise
+        proxy_pool.handle_exception(e)
 
 
 def get(url, params=None, **kwargs):

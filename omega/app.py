@@ -62,11 +62,11 @@ class Omega(Flask):
 
 def create_app(*args, **kw):
     app = Omega(*args, **kw)
+    app.app_context().push()
     logging.config.dictConfig(app.logging_config())
 
-    with app.app_context():
-        app.add_sqlalchemy()
-        register_endpoints(app)
+    app.add_sqlalchemy()
+    register_endpoints(app)
 
     return app
 

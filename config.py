@@ -1,7 +1,7 @@
 import os
 
 postgres_local_base = os.getenv(
-    "postgres_uri", "postgresql://postgres:postgres@localhost/omega"
+    "postgres_uri", "postgresql://omega:omega@localhost/omega"
 )
 
 
